@@ -169,16 +169,11 @@ jq -C -R 'split(".") | .[0],.[1] | @base64d | fromjson' <<< $(cat token) | less 
 * Let's try to call the *API server* without any kind of authentication, using the `kubernetes` service (we will fail because we are considered `anonymous`)
 
 ```bash
-SERVICE_ACCOUNT_VOL=/var/run/secrets/kubernetes.io/serviceaccount
-NAMESPACE=$(cat ${SERVICE_ACCOUNT_VOL}/namespace)
-API_SERVER=https://kubernetes.default.svc
-API_PATH=/api/v1/namespaces/$NAMESPACE/pods
-
 curl -s \
   --insecure \
   -X GET \
-  ${API_SERVER}${API_PATH}
-
+  https://kubernetes.default.svc/api/v1/namespaces/demo/pods \
+  | jq
 ```
 
 * Ok, we will try again. But this time we will build our authorization token, just like any Kubernetes library does:
