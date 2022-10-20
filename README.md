@@ -28,16 +28,6 @@ kubectl create deployment --image nginx mydeployment -v 7
 kubectl create job --image bash  myjob -v 7
 ```
 
-* Instead of using the familiar friendly syntax, you can actuall send request directly to those API paths
-
-```bash
-kubectl get --raw /api/v1/pods
-kubectl get --raw /api/v1/pods | jq '.items[].metadata | "\(.name) (\(.namespace))"' -r
-kubectl get --raw /apis/apps/v1/namespaces/kube-system/deployments | jq
-kubectl get --raw /apis/apps/v1/namespaces/kube-system/deployments | \
-  jq '.items[].metadata.name'
-```
-
 ## Investigate the *pod* identity
 
 * Look at the details of the *pod*: there a reference to a `default` *service account*, even if we didn't asked for it
@@ -62,46 +52,6 @@ kubectl describe sa default
 
 ```bash
 kubectl get secrets
-```
-
-* We will need more details, so
-
-```bash
-SECRET_NAME=$(kubectl get secrets -ojsonpath="{.items[0].metadata.name}"); echo $SECRET_NAME
-kubectl get secret $SECRET_NAME -ojson | jq -C | more
-```
-
-* Now we can dive in the `data` content. The `namespace` value does not look very informative. Maybe is it encrypted?
-
-```bash
-kubectl get secret $SECRET_NAME -ojsonpath="{.data.namespace}"; echo
-```
-
-* It is not! Just codified using `base64`
-
-```bash
-kubectl get secret $SECRET_NAME -ojsonpath="{.data.namespace}" | base64 --decode ; echo
-```
-
-* The `namespace` attribute wasn't very exciting, but the rest of them looks much more interesting! Let's see the *Certification Authority* certificate
-
-```
-kubectl get secret $SECRET_NAME -ojsonpath="{.data.ca\.crt}" | base64 --decode ; echo
-```
-
-* Of course, it can be examined in detail (try to find the public key used to validate the signatures that will appear later)
-
-```bash
-kubectl get secret $SECRET_NAME -ojsonpath="{.data.ca\.crt}" | \
-  base64 --decode | \
-  openssl x509 -text
-```
-
-* Our last field is actually a [Json Web Token](https://jwt.io/introduction). Take note of the `service-account-uid` value, as it will appear later
-
-```bash
-JWT=$(kubectl get secret $SECRET_NAME -ojsonpath="{.data.token}" | base64 --decode)
-jq -R 'split(".") | .[0],.[1] | @base64d | fromjson' <<< $(echo "${JWT}")
 ```
 
 ## Identity injection
