@@ -1,5 +1,7 @@
 # Kubernetes authentication deep dive
 
+![Diagram](diagram.jpg)
+
 ## Preparation
 
 * Define a namespace for the workshop
